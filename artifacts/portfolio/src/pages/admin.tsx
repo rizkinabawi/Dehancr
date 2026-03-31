@@ -44,12 +44,17 @@ import {
   Linkedin,
   Mail,
   MapPin,
+  Inbox,
+  Circle,
+  CheckCheck,
+  Reply,
+  Clock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/theme-provider";
 import { Moon, Sun } from "lucide-react";
 
-type Section = "overview" | "projects" | "profile";
+type Section = "overview" | "projects" | "profile" | "inquiries";
 
 type ProjectFormData = {
   title: string;
@@ -424,6 +429,40 @@ export default function Admin() {
   const deleteProject = useDeleteProject();
   const updateProfile = useUpdateProfile();
 
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [inquiriesLoading, setInquiriesLoading] = useState(false);
+  const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
+  const fetchInquiries = async () => {
+    setInquiriesLoading(true);
+    try {
+      const res = await fetch(`${BASE}/api/inquiries`);
+      if (res.ok) setInquiries(await res.json());
+    } catch {}
+    setInquiriesLoading(false);
+  };
+
+  useEffect(() => {
+    if (section === "inquiries") fetchInquiries();
+  }, [section]);
+
+  const updateInquiryStatus = async (id: number, status: string) => {
+    await fetch(`${BASE}/api/inquiries/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
+  };
+
+  const deleteInquiry = async (id: number) => {
+    await fetch(`${BASE}/api/inquiries/${id}`, { method: "DELETE" });
+    setInquiries(prev => prev.filter(i => i.id !== id));
+    addToast("Inquiry deleted", "success");
+  };
+
+  const unreadCount = inquiries.filter(i => i.status === "unread").length;
+
   const [profileForm, setProfileForm] = useState({
     name: "", title: "", bio: "", email: "", location: "",
     website: "", github: "", instagram: "", linkedin: "",
@@ -532,9 +571,10 @@ export default function Admin() {
   const setP = (k: keyof typeof profileForm, v: string) => setProfileForm((f) => ({ ...f, [k]: v }));
 
   const navItems = [
-    { id: "overview" as Section, label: "Overview", icon: LayoutDashboard },
-    { id: "projects" as Section, label: "Projects", icon: FolderOpen },
-    { id: "profile" as Section, label: "Profile", icon: User },
+    { id: "overview" as Section, label: "Overview", icon: LayoutDashboard, badge: null },
+    { id: "projects" as Section, label: "Projects", icon: FolderOpen, badge: null },
+    { id: "profile" as Section, label: "Profile", icon: User, badge: null },
+    { id: "inquiries" as Section, label: "Inquiries", icon: Inbox, badge: unreadCount > 0 ? unreadCount : null },
   ];
 
   return (
@@ -553,7 +593,7 @@ export default function Admin() {
         </div>
 
         <nav className="flex-1 p-4 flex flex-col gap-1">
-          {navItems.map(({ id, label, icon: Icon }) => (
+          {navItems.map(({ id, label, icon: Icon, badge }) => (
             <button
               key={id}
               data-testid={`nav-${id}`}
@@ -566,7 +606,14 @@ export default function Admin() {
             >
               <Icon className="w-4 h-4 shrink-0" />
               {label}
-              {section === id && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
+              <span className="ml-auto flex items-center gap-1">
+                {badge !== null && (
+                  <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                    {badge}
+                  </span>
+                )}
+                {section === id && <ChevronRight className="w-3.5 h-3.5" />}
+              </span>
             </button>
           ))}
         </nav>
@@ -863,6 +910,105 @@ export default function Admin() {
                       </button>
                     </div>
                   </form>
+                )}
+              </motion.div>
+            )}
+          {/* Inquiries */}
+            {section === "inquiries" && (
+              <motion.div key="inquiries" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <div className="mb-8 flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-display font-bold">Inquiries</h1>
+                    <p className="text-muted-foreground mt-1 text-sm">Messages from your contact form</p>
+                  </div>
+                  <button
+                    onClick={fetchInquiries}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-border transition-all"
+                  >
+                    <Clock className="w-4 h-4" /> Refresh
+                  </button>
+                </div>
+
+                {inquiriesLoading ? (
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+                  </div>
+                ) : inquiries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+                    <Inbox className="w-14 h-14 text-muted-foreground/30" />
+                    <p className="text-muted-foreground">No inquiries yet.</p>
+                    <p className="text-sm text-muted-foreground/60">Messages from your contact form will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {inquiries.map((inq) => (
+                      <div
+                        key={inq.id}
+                        className={`rounded-2xl border p-6 transition-all ${
+                          inq.status === "unread"
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-border/40 bg-muted/10"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
+                              {inq.status === "unread" && (
+                                <Circle className="w-2.5 h-2.5 text-primary fill-primary shrink-0" />
+                              )}
+                              <span className="font-display font-bold text-lg truncate">{inq.subject}</span>
+                              <span className={`text-[11px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full shrink-0 ${
+                                inq.status === "unread" ? "bg-primary/20 text-primary" :
+                                inq.status === "replied" ? "bg-green-500/10 text-green-400" :
+                                "bg-muted/40 text-muted-foreground"
+                              }`}>
+                                {inq.status}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+                              <span className="font-medium text-foreground">{inq.name}</span>
+                              <span>·</span>
+                              <a href={`mailto:${inq.email}`} className="hover:text-primary transition-colors">{inq.email}</a>
+                              <span>·</span>
+                              <span>{new Date(inq.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">{inq.message}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-border/30">
+                          {inq.status === "unread" && (
+                            <button
+                              onClick={() => updateInquiryStatus(inq.id, "read")}
+                              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all"
+                            >
+                              <CheckCheck className="w-3.5 h-3.5" /> Mark as read
+                            </button>
+                          )}
+                          {inq.status !== "replied" && (
+                            <button
+                              onClick={() => updateInquiryStatus(inq.id, "replied")}
+                              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all"
+                            >
+                              <Reply className="w-3.5 h-3.5" /> Mark as replied
+                            </button>
+                          )}
+                          <a
+                            href={`mailto:${inq.email}?subject=Re: ${encodeURIComponent(inq.subject)}`}
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all"
+                          >
+                            <Mail className="w-3.5 h-3.5" /> Reply via email
+                          </a>
+                          <button
+                            onClick={() => deleteInquiry(inq.id)}
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all ml-auto"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </motion.div>
             )}

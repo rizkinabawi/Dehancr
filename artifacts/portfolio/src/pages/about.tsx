@@ -1,12 +1,49 @@
 import { useGetProfile } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { MapPin, Mail, Globe, Github, Linkedin, Instagram, ArrowRight } from "lucide-react";
+import { MapPin, Mail, Globe, Github, Linkedin, Instagram, Send, CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
+async function submitInquiry(data: { name: string; email: string; subject: string; message: string }) {
+  const res = await fetch(`${BASE}/api/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to send");
+  return res.json();
+}
 
 export default function About() {
   const { data: profile, isLoading } = useGetProfile();
   const [imgSrc, setImgSrc] = useState(profile?.avatarUrl || '/images/profile-placeholder.png');
+
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.subject || !form.message) return;
+    setSending(true);
+    setSendError("");
+    try {
+      await submitInquiry(form);
+      setSent(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch {
+      setSendError("Something went wrong. Please try again or email me directly.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -188,22 +225,136 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="border-t border-border/50 bg-foreground text-background">
-        <div className="container mx-auto px-4 md:px-6 py-32 md:py-48 text-center flex flex-col items-center justify-center">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 max-w-4xl"
-          >
-            Have a project in mind? <br />
-            <span className="text-muted italic font-serif">Let's create something</span>
-          </motion.h2>
-          <a href={`mailto:${profile.email}`} className="group inline-flex items-center gap-4 bg-primary text-primary-foreground px-8 py-5 rounded-full font-bold text-xl hover:bg-background hover:text-foreground transition-all duration-300">
-            Start a conversation 
-            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-          </a>
+      {/* Inquiry / Contact Form Section */}
+      <section id="contact" className="border-t border-border/50">
+        <div className="container mx-auto px-4 md:px-6 py-24 md:py-40">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 items-start">
+
+            {/* Left — heading */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="lg:sticky lg:top-32"
+            >
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-6">Get in touch</p>
+              <h2 className="font-display text-5xl md:text-6xl font-bold tracking-tighter leading-[0.95] mb-8">
+                Have a project <br />
+                <span className="text-muted-foreground italic font-serif">in mind?</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-md">
+                Whether it's a branding challenge, a new digital product, or a collaboration — drop me a message and let's explore what we can build together.
+              </p>
+              <div className="flex flex-col gap-4">
+                <a href={`mailto:${profile.email}`} className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors group">
+                  <Mail className="w-4 h-4 text-primary" />
+                  <span>{profile.email}</span>
+                </a>
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span>{profile.location}</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right — form */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              {sent ? (
+                <div className="flex flex-col items-center justify-center gap-6 py-20 text-center">
+                  <CheckCircle className="w-16 h-16 text-primary" />
+                  <h3 className="font-display text-3xl font-bold">Message sent!</h3>
+                  <p className="text-muted-foreground max-w-xs">Thanks for reaching out. I'll get back to you as soon as possible.</p>
+                  <button
+                    onClick={() => setSent(false)}
+                    className="text-primary underline underline-offset-4 text-sm hover:text-foreground transition-colors"
+                  >
+                    Send another message
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="name" className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Name *</label>
+                      <input
+                        id="name"
+                        name="name"
+                        type="text"
+                        required
+                        value={form.name}
+                        onChange={handleChange}
+                        placeholder="Your name"
+                        className="bg-muted/30 border border-border/60 rounded-xl px-4 py-4 text-foreground placeholder-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="email" className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Email *</label>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        value={form.email}
+                        onChange={handleChange}
+                        placeholder="your@email.com"
+                        className="bg-muted/30 border border-border/60 rounded-xl px-4 py-4 text-foreground placeholder-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="subject" className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Subject *</label>
+                    <input
+                      id="subject"
+                      name="subject"
+                      type="text"
+                      required
+                      value={form.subject}
+                      onChange={handleChange}
+                      placeholder="What's this about?"
+                      className="bg-muted/30 border border-border/60 rounded-xl px-4 py-4 text-foreground placeholder-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="message" className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Message *</label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      required
+                      rows={6}
+                      value={form.message}
+                      onChange={handleChange}
+                      placeholder="Tell me about your project, timeline, and budget..."
+                      className="bg-muted/30 border border-border/60 rounded-xl px-4 py-4 text-foreground placeholder-muted-foreground/50 focus:outline-none focus:border-primary transition-colors resize-none"
+                    />
+                  </div>
+
+                  {sendError && (
+                    <p className="text-red-400 text-sm">{sendError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={sending}
+                    className="inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-5 rounded-full font-bold text-lg hover:opacity-90 disabled:opacity-50 transition-all self-start"
+                  >
+                    {sending ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" /> Sending…</>
+                    ) : (
+                      <><Send className="w-5 h-5" /> Send Message</>
+                    )}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+
+          </div>
         </div>
       </section>
     </div>

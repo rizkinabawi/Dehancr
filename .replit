@@ -27,3 +27,12 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "587"
+SMTP_USER = "your@gmail.com"
+SMTP_TO = "your@gmail.com"
+SMTP_PASS = "dummy-password-change-me"
