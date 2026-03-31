@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "MCnRJb9M1h2cx7Q__mnd-"
@@ -24,3 +23,9 @@ id = "hP4Vy2lirqv_Cf8Ees44C"
 uri = "file://artifacts/portfolio/public/images/project-placeholder-3.png"
 type = "image"
 title = "3D motion graphics"
+
+[[outputs]]
+id = "xoAoEXWUzvpGgxNq339sX"
+uri = "file://README.md"
+type = "text"
+title = "README.md — Alex Rivera Portfolio"
