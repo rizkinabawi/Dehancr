@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "MCnRJb9M1h2cx7Q__mnd-"
+uri = "file://artifacts/portfolio/public/images/profile-placeholder.png"
+type = "image"
+title = "Designer portrait"
+
+[[generated]]
+id = "zZU9wboJTv7esOlG4Ul10"
+uri = "file://artifacts/portfolio/public/images/project-placeholder-1.png"
+type = "image"
+title = "Dark mode UI"
+
+[[generated]]
+id = "FnZnZgb521X1lQXrTgvc0"
+uri = "file://artifacts/portfolio/public/images/project-placeholder-2.png"
+type = "image"
+title = "Brand presentation"
+
+[[generated]]
+id = "hP4Vy2lirqv_Cf8Ees44C"
+uri = "file://artifacts/portfolio/public/images/project-placeholder-3.png"
+type = "image"
+title = "3D motion graphics"

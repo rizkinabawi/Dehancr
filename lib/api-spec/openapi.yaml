@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Portfolio API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Portfolio project operations
+  - name: profile
+    description: Personal profile information
+  - name: categories
+    description: Project categories
 paths:
   /healthz:
     get:
@@ -24,6 +29,167 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /projects:
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: Get all projects
+      description: Returns all portfolio projects, optionally filtered by category
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: featured
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProject"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get project by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Not found
+    put:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProject"
+      responses:
+        "200":
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /projects/stats:
+    get:
+      operationId: getProjectStats
+      tags: [projects]
+      summary: Get project statistics
+      description: Returns aggregated stats about projects
+      responses:
+        "200":
+          description: Project stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStats"
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: Get all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get profile information
+      responses:
+        "200":
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfile"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +200,284 @@ components:
       required:
         - status
 
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        longDescription:
+          type: string
+          nullable: true
+        coverImage:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        year:
+          type: integer
+        client:
+          type: string
+          nullable: true
+        tools:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+        views:
+          type: integer
+        likes:
+          type: integer
+        projectUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - description
+        - coverImage
+        - images
+        - category
+        - tags
+        - year
+        - tools
+        - featured
+        - views
+        - likes
+        - createdAt
+
+    CreateProject:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        longDescription:
+          type: string
+          nullable: true
+        coverImage:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        year:
+          type: integer
+        client:
+          type: string
+          nullable: true
+        tools:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+        projectUrl:
+          type: string
+          nullable: true
+      required:
+        - title
+        - description
+        - coverImage
+        - images
+        - category
+        - tags
+        - year
+        - tools
+        - featured
+
+    ProjectStats:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        totalViews:
+          type: integer
+        totalLikes:
+          type: integer
+        categoryCounts:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
+            required:
+              - category
+              - count
+        featuredCount:
+          type: integer
+        yearsActive:
+          type: integer
+      required:
+        - totalProjects
+        - totalViews
+        - totalLikes
+        - categoryCounts
+        - featuredCount
+        - yearsActive
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        projectCount:
+          type: integer
+      required:
+        - id
+        - name
+        - slug
+        - projectCount
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        location:
+          type: string
+        email:
+          type: string
+        website:
+          type: string
+          nullable: true
+        github:
+          type: string
+          nullable: true
+        instagram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experience"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/Education"
+      required:
+        - id
+        - name
+        - title
+        - bio
+        - avatarUrl
+        - location
+        - email
+        - skills
+        - experience
+        - education
+
+    UpdateProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        location:
+          type: string
+        email:
+          type: string
+        website:
+          type: string
+          nullable: true
+        github:
+          type: string
+          nullable: true
+        instagram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+
+    Experience:
+      type: object
+      properties:
+        id:
+          type: integer
+        company:
+          type: string
+        role:
+          type: string
+        startYear:
+          type: integer
+        endYear:
+          type: integer
+          nullable: true
+        description:
+          type: string
+      required:
+        - id
+        - company
+        - role
+        - startYear
+        - description
+
+    Education:
+      type: object
+      properties:
+        id:
+          type: integer
+        institution:
+          type: string
+        degree:
+          type: string
+        year:
+          type: integer
+      required:
+        - id
+        - institution
+        - degree
+        - year
